@@ -362,7 +362,6 @@
     </div>
 
     <script>
-        // UPDATE THIS WITH YOUR RAILWAY BACKEND URL
         const API_URL = 'https://7a0412c0-bcf1-412f-b3c6-405cbed650a2-00-3ole6ry0dhua1.sisko.replit.dev';
         
         let mediaRecorder;
@@ -411,65 +410,61 @@
             }
         }
 
-      async function identifyRaaga() {
-    const audioToSend = recordedBlob || selectedFile;
+        async function identifyRaaga() {
+            const audioToSend = recordedBlob || selectedFile;
 
-    if (!audioToSend) {
-        alert('Please record or upload audio first');
-        return;
-    }
+            if (!audioToSend) {
+                alert('Please record or upload audio first');
+                return;
+            }
 
-    const formData = new FormData();
-    formData.append('audio', audioToSend);
+            const formData = new FormData();
+            formData.append('audio', audioToSend);
 
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('result').classList.remove('show');
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').classList.remove('show');
 
-    try {
-        const response = await fetch(`${API_URL}/api/identify`, {
-            method: 'POST',
-            body: formData,
-            timeout: 30000
-        });
+            try {
+                const response = await fetch(`${API_URL}/api/identify`, {
+                    method: 'POST',
+                    body: formData
+                });
 
-        const data = await response.json();
-        console.log('Backend response:', data);
+                const data = await response.json();
+                console.log('Backend response:', data);
 
-        if (data.status === 'success') {
-            const match = data.top_match;
-            document.getElementById('ragaName').textContent = match.raaga;
-            document.getElementById('melakartha').textContent = `#${match.melakartha}`;
-            document.getElementById('confidence').textContent = match.confidence + '%';
-            
-            const swarasHtml = data.identified_swaras.map(s => 
-                `<span class="swara-tag">${s}</span>`
-            ).join(' ');
-            document.getElementById('swarasDisplay').innerHTML = swarasHtml;
-            
-            const altHtml = data.alternatives.map(alt =>
-                `<div class="alt-raga"><span>${alt.raaga}</span><span>${alt.confidence}%</span></div>`
-            ).join('');
-            document.getElementById('alternatives').innerHTML = altHtml;
-            
-            document.getElementById('result').classList.add('show');
-            document.getElementById('feedback').classList.add('show');
-            
-            window.currentPrediction = match.raaga;
-            window.currentSwaras = data.identified_swaras;
-        } else {
-            alert('Error: ' + (data.error || 'Could not identify raaga'));
-            console.error('Backend error:', data);
+                if (data.status === 'success') {
+                    const match = data.top_match;
+                    document.getElementById('ragaName').textContent = match.raaga;
+                    document.getElementById('melakartha').textContent = `#${match.melakartha}`;
+                    document.getElementById('confidence').textContent = match.confidence + '%';
+                    
+                    const swarasHtml = data.identified_swaras.map(s => 
+                        `<span class="swara-tag">${s}</span>`
+                    ).join(' ');
+                    document.getElementById('swarasDisplay').innerHTML = swarasHtml;
+                    
+                    const altHtml = data.alternatives.map(alt =>
+                        `<div class="alt-raga"><span>${alt.raaga}</span><span>${alt.confidence}%</span></div>`
+                    ).join('');
+                    document.getElementById('alternatives').innerHTML = altHtml;
+                    
+                    document.getElementById('result').classList.add('show');
+                    document.getElementById('feedback').classList.add('show');
+                    
+                    window.currentPrediction = match.raaga;
+                    window.currentSwaras = data.identified_swaras;
+                } else {
+                    alert('Error: ' + (data.error || 'Could not identify raaga'));
+                    console.error('Backend error:', data);
+                }
+            } catch (error) {
+                alert('Error connecting to backend: ' + error.message);
+                console.error('Error:', error);
+            }
+
+            document.getElementById('loading').style.display = 'none';
         }
-    } catch (error) {
-        alert('Error connecting to backend: ' + error.message);
-        console.error('Error:', error);
-    }
-
-    document.getElementById('loading').style.display = 'none';
-}
-
-    }, 2000);
-}
 
         async function submitFeedback(isCorrect) {
             const actual = isCorrect ? window.currentPrediction : prompt('What is the correct raaga?');
