@@ -419,42 +419,55 @@
         return;
     }
 
+    const formData = new FormData();
+    formData.append('audio', audioToSend);
+
     document.getElementById('loading').style.display = 'block';
     document.getElementById('result').classList.remove('show');
 
-    // Simulate processing
-    setTimeout(() => {
-        const ragas = ['Bhairav', 'Yaman', 'Kharaharapriya', 'Mayamalavagowla', 'Natabhairavi'];
-        const randomRaga = ragas[Math.floor(Math.random() * ragas.length)];
-        
-        document.getElementById('ragaName').textContent = randomRaga;
-        document.getElementById('melakartha').textContent = '#' + (Math.floor(Math.random() * 72) + 1);
-        document.getElementById('confidence').textContent = (75 + Math.random() * 20).toFixed(1) + '%';
-        
-        const swaras = ['Sa', 'Re', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni'];
-        const randomSwaras = swaras.sort(() => Math.random() - 0.5).slice(0, 5);
-        const swarasHtml = randomSwaras.map(s => 
-            `<span class="swara-tag">${s}</span>`
-        ).join(' ');
-        document.getElementById('swarasDisplay').innerHTML = swarasHtml;
-        
-        const alternatives = [
-            {name: 'Yaman', confidence: 70},
-            {name: 'Kharaharapriya', confidence: 65},
-            {name: 'Bhairav', confidence: 60}
-        ];
-        
-        const altHtml = alternatives.map(alt =>
-            `<div class="alt-raga"><span>${alt.name}</span><span>${alt.confidence}%</span></div>`
-        ).join('');
-        document.getElementById('alternatives').innerHTML = altHtml;
-        
-        document.getElementById('result').classList.add('show');
-        document.getElementById('feedback').classList.add('show');
-        
-        window.currentPrediction = randomRaga;
-        window.currentSwaras = randomSwaras;
-        document.getElementById('loading').style.display = 'none';
+    try {
+        const response = await fetch(`${API_URL}/api/identify`, {
+            method: 'POST',
+            body: formData,
+            timeout: 30000
+        });
+
+        const data = await response.json();
+        console.log('Backend response:', data);
+
+        if (data.status === 'success') {
+            const match = data.top_match;
+            document.getElementById('ragaName').textContent = match.raaga;
+            document.getElementById('melakartha').textContent = `#${match.melakartha}`;
+            document.getElementById('confidence').textContent = match.confidence + '%';
+            
+            const swarasHtml = data.identified_swaras.map(s => 
+                `<span class="swara-tag">${s}</span>`
+            ).join(' ');
+            document.getElementById('swarasDisplay').innerHTML = swarasHtml;
+            
+            const altHtml = data.alternatives.map(alt =>
+                `<div class="alt-raga"><span>${alt.raaga}</span><span>${alt.confidence}%</span></div>`
+            ).join('');
+            document.getElementById('alternatives').innerHTML = altHtml;
+            
+            document.getElementById('result').classList.add('show');
+            document.getElementById('feedback').classList.add('show');
+            
+            window.currentPrediction = match.raaga;
+            window.currentSwaras = data.identified_swaras;
+        } else {
+            alert('Error: ' + (data.error || 'Could not identify raaga'));
+            console.error('Backend error:', data);
+        }
+    } catch (error) {
+        alert('Error connecting to backend: ' + error.message);
+        console.error('Error:', error);
+    }
+
+    document.getElementById('loading').style.display = 'none';
+}
+
     }, 2000);
 }
 
